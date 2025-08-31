@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Scholarship Matchmaker{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Your Academic Profile</h1>
+        <p>Complete your profile to get the best scholarship matches</p>
+    </div>
+    
+    <div class="profile-card">
+        <form id="profileForm" class="profile-form">
+            <div class="form-section">
+                <h3><i class="fas fa-user"></i> Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" required min="16" max="100" placeholder="Enter your age">
+                    </div>
+                    <div class="form-group">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" required>
+                            <option value="">Select your country</option>
+                            <option value="United States">United States</option>
+                            <option value="Canada">Canada</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Japan">Japan</option>
+                            <option value="South Korea">South Korea</option>
+                            <option value="Singapore">Singapore</option>
+                            <option value="Netherlands">Netherlands</option>
+                            <option value="Sweden">Sweden</option>
+                            <option value="Switzerland">Switzerland</option>
+                            <option value="Norway">Norway</option>
+                            <option value="Denmark">Denmark</option>
+                            <option value="Finland">Finland</option>
+                            <option value="New Zealand">New Zealand</option>
+                            <option value="Ireland">Ireland</option>
+                            <option value="Belgium">Belgium</option>
+                            <option value="Austria">Austria</option>
+                            <option value="Italy">Italy</option>
+                            <option value="Spain">Spain</option>
+                            <option value="Portugal">Portugal</option>
+                            <option value="Greece">Greece</option>
+                            <option value="Poland">Poland</option>
+                            <option value="Czech Republic">Czech Republic</option>
+                            <option value="Hungary">Hungary</option>
+                            <option value="Slovakia">Slovakia</option>
+                            <option value="Slovenia">Slovenia</option>
+                            <option value="Croatia">Croatia</option>
+                            <option value="Estonia">Estonia</option>
+                            <option value="Latvia">Latvia</option>
+                            <option value="Lithuania">Lithuania</option>
+                            <option value="Luxembourg">Luxembourg</option>
+                            <option value="Malta">Malta</option>
+                            <option value="Cyprus">Cyprus</option>
+                            <option value="Bulgaria">Bulgaria</option>
+                            <option value="Romania">Romania</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number (Optional)</label>
+                    <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number for SMS notifications">
+                    <small class="form-help">We'll use this to send you application updates</small>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="education_level">Education Level</label>
+                        <select id="education_level" name="education_level" required>
+                            <option value="">Select your education level</option>
+                            <option value="High School">High School</option>
+                            <option value="Undergraduate">Undergraduate</option>
+                            <option value="Graduate">Graduate</option>
+                            <option value="PhD">PhD</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gpa">GPA (Grade Point Average)</label>
+                        <input type="number" id="gpa" name="gpa" required min="0" max="4" step="0.01" placeholder="Enter your GPA (0.0 - 4.0)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="field_of_study">Field of Study</label>
+                    <select id="field_of_study" name="field_of_study" required>
+                        <option value="">Select your field of study</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Medicine">Medicine</option>
+                        <option value="Business Administration">Business Administration</option>
+                        <option value="Arts and Humanities">Arts and Humanities</option>
+                        <option value="Environmental Science">Environmental Science</option>
+                        <option value="Technology">Technology</option>
+                        <option value="STEM">STEM</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Psychology">Psychology</option>
+                        <option value="Sociology">Sociology</option>
+                        <option value="Economics">Economics</option>
+                        <option value="Political Science">Political Science</option>
+                        <option value="History">History</option>
+                        <option value="Literature">Literature</option>
+                        <option value="Philosophy">Philosophy</option>
+                        <option value="Education">Education</option>
+                        <option value="Law">Law</option>
+                        <option value="Architecture">Architecture</option>
+                        <option value="Design">Design</option>
+                        <option value="Music">Music</option>
+                        <option value="Film">Film</option>
+                        <option value="Journalism">Journalism</option>
+                        <option value="Communications">Communications</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Nursing">Nursing</option>
+                        <option value="Pharmacy">Pharmacy</option>
+                        <option value="Dentistry">Dentistry</option>
+                        <option value="Veterinary Medicine">Veterinary Medicine</option>
+                        <option value="Agriculture">Agriculture</option>
+                        <option value="Forestry">Forestry</option>
+                        <option value="Marine Science">Marine Science</option>
+                        <option value="Astronomy">Astronomy</option>
+                        <option value="Geology">Geology</option>
+                        <option value="Meteorology">Meteorology</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3><i class="fas fa-dollar-sign"></i> Financial Information</h3>
+                <div class="form-group">
+                    <label for="financial_need">Financial Need Level</label>
+                    <select id="financial_need" name="financial_need" required>
+                        <option value="">Select your financial need level</option>
+                        <option value="High">High - Significant financial assistance needed</option>
+                        <option value="Medium">Medium - Some financial assistance needed</option>
+                        <option value="Low">Low - Minimal financial assistance needed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-large">
+                    <i class="fas fa-save"></i>
+                    Save Profile
+                </button>
+                <a href="{{ url_for('match') }}" class="btn btn-secondary btn-large">
+                    <i class="fas fa-search"></i>
+                    Find Scholarships
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        age: parseInt(document.getElementById('age').value),
+        country: document.getElementById('country').value,
+        education_level: document.getElementById('education_level').value,
+        gpa: parseFloat(document.getElementById('gpa').value),
+        field_of_study: document.getElementById('field_of_study').value,
+        financial_need: document.getElementById('financial_need').value,
+        phone_number: document.getElementById('phone_number').value
+    };
+    
+    // Validation
+    if (formData.gpa < 0 || formData.gpa > 4) {
+        showToast('GPA must be between 0.0 and 4.0', 'error');
+        return;
+    }
+    
+    if (formData.age < 16 || formData.age > 100) {
+        showToast('Age must be between 16 and 100', 'error');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Profile updated successfully!', 'success');
+        } else {
+            showToast(data.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+</script>
+{% endblock %}

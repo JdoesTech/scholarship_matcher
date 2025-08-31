@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Find Scholarships - Scholarship Matchmaker{% endblock %}
+
+{% block content %}
+<div class="match-container">
+    <div class="match-header">
+        <h1>Your Scholarship Matches</h1>
+        <p>Based on your profile, here are your top 3 scholarship recommendations</p>
+    </div>
+    
+    <div class="match-actions">
+        <button id="findMatchesBtn" class="btn btn-primary btn-large">
+            <i class="fas fa-search"></i>
+            Find My Matches
+        </button>
+        <a href="{{ url_for('profile') }}" class="btn btn-secondary">
+            <i class="fas fa-edit"></i>
+            Update Profile
+        </a>
+    </div>
+    
+    <div id="matchesContainer" class="matches-container">
+        <!-- Matches will be loaded here -->
+    </div>
+    
+    <div id="noMatchesMessage" class="no-matches hidden">
+        <div class="no-matches-content">
+            <i class="fas fa-search"></i>
+            <h3>No Matches Found</h3>
+            <p>We couldn't find any scholarships that match your current profile. Try updating your profile or expanding your search criteria.</p>
+            <a href="{{ url_for('profile') }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i>
+                Update Profile
+            </a>
+        </div>
+    </div>
+    
+    <div id="loadingMessage" class="loading-message hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Finding Your Perfect Matches</h3>
+            <p>Our AI is analyzing thousands of scholarships to find the best ones for you...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Scholarship Card Template -->
+<template id="scholarshipCardTemplate">
+    <div class="scholarship-card">
+        <div class="card-header">
+            <div class="scholarship-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="scholarship-info">
+                <h3 class="scholarship-name"></h3>
+                <div class="scholarship-amount"></div>
+            </div>
+            <div class="confidence-score">
+                <div class="confidence-circle">
+                    <span class="confidence-percentage"></span>
+                </div>
+                <span class="confidence-label">Match</span>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <p class="scholarship-description"></p>
+            
+            <div class="scholarship-details">
+                <div class="detail-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="detail-label">Deadline:</span>
+                    <span class="deadline-date"></span>
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-list-alt"></i>
+                    <span class="detail-label">Requirements:</span>
+                    <span class="requirements-text"></span>
+                </div>
+            </div>
+            
+            <div class="confidence-bar-container">
+                <div class="confidence-bar">
+                    <div class="confidence-fill"></div>
+                </div>
+                <span class="confidence-text"></span>
+            </div>
+        </div>
+        
+        <div class="card-actions">
+            <button class="btn btn-primary apply-btn">
+                <i class="fas fa-paper-plane"></i>
+                Apply Now
+            </button>
+            <div class="feedback-buttons">
+                <button class="feedback-btn like-btn" title="This match is helpful">
+                    <i class="fas fa-thumbs-up"></i>
+                </button>
+                <button class="feedback-btn dislike-btn" title="This match is not helpful">
+                    <i class="fas fa-thumbs-down"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMatches = [];
+
+document.getElementById('findMatchesBtn').addEventListener('click', findMatches);
+
+async function findMatches() {
+    showLoadingMessage();
+    hideMatches();
+    
+    try {
+        const response = await fetch('/api/match', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.matches && data.matches.length > 0) {
+                currentMatches = data.matches;
+                displayMatches(data.matches);
+            } else {
+                showNoMatches();
+            }
+        } else {
+            showToast(data.message || 'Failed to find matches', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred while finding matches', 'error');
+    } finally {
+        hideLoadingMessage();
+    }
+}
+
+function displayMatches(matches) {
+    const container = document.getElementById('matchesContainer');
+    container.innerHTML = '';
+    
+    matches.forEach((match, index) => {
+        const card = createScholarshipCard(match, index);
+        container.appendChild(card);
+    });
+    
+    container.classList.remove('hidden');
+}
+
+function createScholarshipCard(match, index) {
+    const template = document.getElementById('scholarshipCardTemplate');
+    const card = template.content.cloneNode(true);
+    
+    // Fill in the card data
+    card.querySelector('.scholarship-name').textContent = match.name;
+    card.querySelector('.scholarship-amount').textContent = `$${match.amount.toLocaleString()}`;
+    card.querySelector('.scholarship-description').textContent = match.description;
+    card.querySelector('.deadline-date').textContent = formatDate(match.deadline);
+    card.querySelector('.requirements-text').textContent = match.requirements;
+    
+    // Set confidence score
+    const confidence = match.confidence;
+    card.querySelector('.confidence-percentage').textContent = `${confidence}%`;
+    card.querySelector('.confidence-text').textContent = `${confidence}% Match`;
+    card.querySelector('.confidence-fill').style.width = `${confidence}%`;
+    
+    // Add event listeners
+    const applyBtn = card.querySelector('.apply-btn');
+    const likeBtn = card.querySelector('.like-btn');
+    const dislikeBtn = card.querySelector('.dislike-btn');
+    
+    applyBtn.addEventListener('click', () => applyScholarship(match.id, match.name));
+    likeBtn.addEventListener('click', () => submitFeedback(match.id, 'like'));
+    dislikeBtn.addEventListener('click', () => submitFeedback(match.id, 'dislike'));
+    
+    // Add animation delay
+    const scholarshipCard = card.querySelector('.scholarship-card');
+    scholarshipCard.style.animationDelay = `${index * 0.2}s`;
+    
+    return card;
+}
+
+async function applyScholarship(scholarshipId, scholarshipName) {
+    if (!confirm(`Are you sure you want to apply for "${scholarshipName}"?`)) {
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/apply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ scholarship_id: scholarshipId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`Application submitted for ${scholarshipName}!`, 'success');
+        } else {
+            showToast(data.message || 'Failed to submit application', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred while submitting application', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function submitFeedback(scholarshipId, feedbackType) {
+    try {
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                scholarship_id: scholarshipId, 
+                feedback_type: feedbackType 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const message = feedbackType === 'like' ? 'Thanks for the feedback!' : 'Thanks for your feedback!';
+            showToast(message, 'success');
+        } else {
+            showToast(data.message || 'Failed to submit feedback', 'error');
+        }
+    } catch (error) {
+        showToast('An error occurred while submitting feedback', 'error');
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+function showLoadingMessage() {
+    document.getElementById('loadingMessage').classList.remove('hidden');
+}
+
+function hideLoadingMessage() {
+    document.getElementById('loadingMessage').classList.add('hidden');
+}
+
+function showNoMatches() {
+    document.getElementById('noMatchesMessage').classList.remove('hidden');
+}
+
+function hideMatches() {
+    document.getElementById('matchesContainer').classList.add('hidden');
+    document.getElementById('noMatchesMessage').classList.add('hidden');
+}
+
+// Auto-find matches when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure page is fully loaded
+    setTimeout(findMatches, 500);
+});
+</script>
+{% endblock %}
