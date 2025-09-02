@@ -13,7 +13,7 @@
             <p>Sign in to your account to continue your scholarship journey</p>
         </div>
         
-        <form id="loginForm" class="auth-form">
+        <form id="loginForm" class="auth-form" method="POST">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <div class="input-wrapper">
@@ -41,6 +41,13 @@
             </div>
         </form>
         
+        <!-- Test button for debugging -->
+        <div class="form-group" style="margin-top: 20px; text-align: center;">
+            <button type="button" class="btn btn-secondary" onclick="testLogin()">
+                🧪 Test Login Function
+            </button>
+        </div>
+        
         <div class="auth-footer">
             <p>Don't have an account? <a href="{{ url_for('signup') }}" class="link">Sign up here</a></p>
         </div>
@@ -50,41 +57,119 @@
 
 {% block extra_js %}
 <script>
-document.getElementById('loginForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Login page loaded');
     
-    const formData = {
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value
-    };
+    const form = document.getElementById('loginForm');
+    if (!form) {
+        console.error('Login form not found!');
+        return;
+    }
     
-    showLoading();
+    console.log('✅ Login form found');
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
     
-    try {
-        const response = await fetch('/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
+    // Function to handle form submission
+    async function handleLogin() {
+        console.log('🧪 Login form submitted!');
         
-        const data = await response.json();
+        const formData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
         
-        if (data.success) {
-            showToast('Login successful! Redirecting...', 'success');
-            setTimeout(() => {
-                window.location.href = '/profile';
-            }, 1500);
-        } else {
-            showToast(data.message || 'Login failed', 'error');
+        console.log('📧 Form data:', formData);
+        
+        if (typeof showLoading === 'function') {
+            showLoading();
         }
-    } catch (error) {
-        showToast('An error occurred. Please try again.', 'error');
-    } finally {
-        hideLoading();
+        
+        try {
+            console.log('🚀 Sending login request...');
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            console.log('📥 Response received:', response.status);
+            const data = await response.json();
+            console.log('📊 Response data:', data);
+            
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast('Login successful! Redirecting...', 'success');
+                } else {
+                    alert('Login successful! Redirecting...');
+                }
+                setTimeout(() => {
+                    window.location.href = '/profile';
+                }, 1500);
+            } else {
+                const message = data.message || 'Login failed';
+                if (typeof showToast === 'function') {
+                    showToast(message, 'error');
+                } else {
+                    alert(message);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Login request error:', error);
+            const message = 'Network error. Please try again.';
+            if (typeof showToast === 'function') {
+                showToast(message, 'error');
+            } else {
+                alert(message);
+            }
+        } finally {
+            if (typeof hideLoading === 'function') {
+                hideLoading();
+            }
+        }
+    }
+    
+    // Add submit event listener
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        await handleLogin();
+    });
+    
+    // Add click event listener to submit button as backup
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        console.log('✅ Submit button found, adding click listener');
+        submitButton.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🧪 Submit button clicked!');
+            await handleLogin();
+        });
+    } else {
+        console.log('❌ Submit button not found');
     }
 });
+
+// Test function for debugging
+function testLogin() {
+    console.log('🧪 Test login function called!');
+    alert('Test login function called! Check console for details.');
+    
+    // Test if we can access the form elements
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    
+    if (email && password) {
+        console.log('✅ Form elements found');
+        console.log('Email value:', email.value);
+        console.log('Password value length:', password.value.length);
+    } else {
+        console.log('❌ Form elements not found');
+    }
+}
 
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);

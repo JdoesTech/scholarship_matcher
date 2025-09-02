@@ -155,7 +155,7 @@
                     <i class="fas fa-save"></i>
                     Save Profile
                 </button>
-                <a href="{{ url_for('match') }}" class="btn btn-secondary btn-large">
+                <a href="{{ url_for('match') }}" id="findScholarshipsBtn" class="btn btn-secondary btn-large">
                     <i class="fas fa-search"></i>
                     Find Scholarships
                 </a>
@@ -167,9 +167,7 @@
 
 {% block extra_js %}
 <script>
-document.getElementById('profileForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
+async function saveProfile() {
     const formData = {
         age: parseInt(document.getElementById('age').value),
         country: document.getElementById('country').value,
@@ -179,40 +177,49 @@ document.getElementById('profileForm').addEventListener('submit', async function
         financial_need: document.getElementById('financial_need').value,
         phone_number: document.getElementById('phone_number').value
     };
-    
+
     // Validation
-    if (formData.gpa < 0 || formData.gpa > 4) {
+    if (isNaN(formData.gpa) || formData.gpa < 0 || formData.gpa > 4) {
         showToast('GPA must be between 0.0 and 4.0', 'error');
-        return;
+        return { success: false };
     }
-    
-    if (formData.age < 16 || formData.age > 100) {
+    if (isNaN(formData.age) || formData.age < 16 || formData.age > 100) {
         showToast('Age must be between 16 and 100', 'error');
-        return;
+        return { success: false };
     }
-    
+
     showLoading();
-    
     try {
         const response = await fetch('/profile', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
-        
         const data = await response.json();
-        
-        if (data.success) {
-            showToast('Profile updated successfully!', 'success');
-        } else {
+        if (!data.success) {
             showToast(data.message || 'Failed to update profile', 'error');
+            return { success: false };
         }
+        showToast('Profile updated successfully!', 'success');
+        return { success: true };
     } catch (error) {
         showToast('An error occurred. Please try again.', 'error');
+        return { success: false };
     } finally {
         hideLoading();
+    }
+}
+
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await saveProfile();
+});
+
+document.getElementById('findScholarshipsBtn').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const result = await saveProfile();
+    if (result && result.success) {
+        window.location.href = this.href;
     }
 });
 </script>

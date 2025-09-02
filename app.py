@@ -76,27 +76,31 @@ def filter_eligible_scholarships(user_profile, scholarships):
     eligible = []
     
     for scholarship in scholarships:
-        # Basic eligibility checks
-        if scholarship['min_gpa'] and user_profile['gpa'] < scholarship['min_gpa']:
-            continue
-            
-        if scholarship['min_age'] and user_profile['age'] < scholarship['min_age']:
-            continue
-            
-        if scholarship['max_age'] and user_profile['age'] > scholarship['max_age']:
-            continue
+        # Basic eligibility checks with proper null handling
+        if scholarship.get('min_gpa') is not None and user_profile.get('gpa') is not None:
+            if user_profile['gpa'] < scholarship['min_gpa']:
+                continue
+        
+        if scholarship.get('min_age') is not None and user_profile.get('age') is not None:
+            if user_profile['age'] < scholarship['min_age']:
+                continue
+        
+        if scholarship.get('max_age') is not None and user_profile.get('age') is not None:
+            if user_profile['age'] > scholarship['max_age']:
+                continue
             
         # Country matching (if scholarship is country-specific)
-        if scholarship['country'] and scholarship['country'] != 'International':
-            if user_profile['country'] != scholarship['country']:
+        if scholarship.get('country') and scholarship['country'] != 'International':
+            if user_profile.get('country') != scholarship['country']:
                 continue
                 
         # Education level matching
-        if scholarship['education_level'] and scholarship['education_level'] != user_profile['education_level']:
-            continue
+        if scholarship.get('education_level') and user_profile.get('education_level'):
+            if scholarship['education_level'] != user_profile['education_level']:
+                continue
             
         # Field of study matching (partial match)
-        if scholarship['field_of_study']:
+        if scholarship.get('field_of_study') and user_profile.get('field_of_study'):
             user_field = user_profile['field_of_study'].lower()
             scholarship_field = scholarship['field_of_study'].lower()
             if not any(field in user_field for field in scholarship_field.split()) and not any(field in scholarship_field for field in user_field.split()):
@@ -115,9 +119,21 @@ def index():
 def login():
     """Login page and logic"""
     if request.method == 'POST':
-        data = request.get_json()
+        print(f"LOGIN POST request received")
+        print(f"Content-Type: {request.content_type}")
+        print(f"Raw data: {request.get_data()}")
+        
+        try:
+            data = request.get_json()
+            print(f"Parsed JSON: {data}")
+        except Exception as e:
+            print(f"JSON parsing error: {e}")
+            return jsonify({'success': False, 'message': f'Invalid JSON: {str(e)}'}), 400
+        
         email = data.get('email')
         password = data.get('password')
+        
+        print(f"Email: {email}, Password length: {len(password) if password else 0}")
         
         try:
             # Get user from database
@@ -126,19 +142,41 @@ def login():
             if response.data and verify_password(password, response.data[0]['password_hash']):
                 session['user_id'] = response.data[0]['id']
                 session['email'] = email
+                print(f"Login successful for user: {email}")
                 return jsonify({'success': True, 'message': 'Login successful'})
             else:
+                print(f"Login failed for user: {email}")
                 return jsonify({'success': False, 'message': 'Invalid credentials'})
         except Exception as e:
+            print(f"Database error: {e}")
             return jsonify({'success': False, 'message': str(e)})
     
+    print(f"LOGIN GET request received")
     return render_template('login.html')
+
+
+        
+@app.route('/api/test', methods=['POST'])
+def test_api():
+    """Test route for debugging"""
+    print("Test API endpoint called")
+    data = request.get_json()
+    print(f"Received test data: {data}")
+    return jsonify({
+        'success': True,
+        'message': 'Backend is working',
+        'received_data': data
+    })
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     """Signup page and logic"""
     if request.method == 'POST':
-        data = request.get_json()
+        try:
+            data = request.get_json()
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Invalid JSON: {str(e)}'}), 400
+        
         email = data.get('email')
         password = data.get('password')
         name = data.get('name')
@@ -214,11 +252,37 @@ def get_matches():
     try:
         # Get user profile
         user_response = supabase.table('users').select('*').eq('id', session['user_id']).execute()
+        if not user_response.data:
+            return jsonify({'success': False, 'message': 'User profile not found'})
+        
         user_profile = user_response.data[0]
+        
+        # Validate required profile fields
+        required_fields = ['age', 'country', 'education_level', 'gpa', 'field_of_study', 'financial_need']
+        
+        def is_missing_value(value):
+            # Treat None and empty strings as missing
+            if value is None:
+                return True
+            if isinstance(value, str) and value.strip() == '':
+                return True
+            # Numeric 0 or 0.0 and boolean False are VALID values
+            return False
+
+        missing_fields = [field for field in required_fields if is_missing_value(user_profile.get(field))]
+        
+        if missing_fields:
+            return jsonify({
+                'success': False, 
+                'message': f'Please complete your profile. Missing: {", ".join(missing_fields)}'
+            })
         
         # Get all scholarships
         scholarships_response = supabase.table('scholarships').select('*').execute()
         scholarships = scholarships_response.data
+        
+        if not scholarships:
+            return jsonify({'success': True, 'matches': [], 'message': 'No scholarships available'})
         
         # Filter eligible scholarships
         eligible_scholarships = filter_eligible_scholarships(user_profile, scholarships)
@@ -232,12 +296,19 @@ def get_matches():
         # Calculate similarities
         similarities = []
         for scholarship in eligible_scholarships:
-            scholarship_embedding = create_scholarship_embedding(scholarship)
-            similarity = calculate_similarity(user_embedding, scholarship_embedding)
-            similarities.append({
-                'scholarship': scholarship,
-                'similarity': similarity
-            })
+            try:
+                scholarship_embedding = create_scholarship_embedding(scholarship)
+                similarity = calculate_similarity(user_embedding, scholarship_embedding)
+                similarities.append({
+                    'scholarship': scholarship,
+                    'similarity': similarity
+                })
+            except Exception as e:
+                print(f"Error processing scholarship {scholarship.get('id', 'unknown')}: {e}")
+                continue
+        
+        if not similarities:
+            return jsonify({'success': True, 'matches': [], 'message': 'Error processing scholarships'})
         
         # Sort by similarity and get top 3
         similarities.sort(key=lambda x: x['similarity'], reverse=True)
@@ -263,7 +334,8 @@ def get_matches():
         return jsonify({'success': True, 'matches': matches})
         
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        print(f"Error in get_matches: {e}")
+        return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
 
 @app.route('/api/feedback', methods=['POST'])
 def submit_feedback():

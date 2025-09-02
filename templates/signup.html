@@ -13,7 +13,7 @@
             <p>Create your account and start your scholarship journey today</p>
         </div>
         
-        <form id="signupForm" class="auth-form">
+        <form id="signupForm" class="auth-form" method="POST">
             <div class="form-group">
                 <label for="name">Full Name</label>
                 <div class="input-wrapper">
@@ -61,6 +61,16 @@
             </div>
         </form>
         
+        <!-- Test buttons for debugging -->
+        <div class="form-group" style="margin-top: 20px; text-align: center;">
+            <button type="button" class="btn btn-secondary" onclick="testJavaScript()">
+                🧪 Test JavaScript (Debug)
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="testFetch()">
+                🧪 Test Fetch Request
+            </button>
+        </div>
+        
         <div class="auth-footer">
             <p>Already have an account? <a href="{{ url_for('login') }}" class="link">Sign in here</a></p>
         </div>
@@ -70,55 +80,166 @@
 
 {% block extra_js %}
 <script>
-document.getElementById('signupForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Signup page loaded');
     
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    if (password !== confirmPassword) {
-        showToast('Passwords do not match', 'error');
+    const form = document.getElementById('signupForm');
+    if (!form) {
+        console.error('Signup form not found!');
         return;
     }
     
-    if (password.length < 8) {
-        showToast('Password must be at least 8 characters long', 'error');
-        return;
-    }
+    console.log('✅ Signup form found');
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
     
-    const formData = {
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        password: password
-    };
-    
-    showLoading();
-    
-    try {
-        const response = await fetch('/signup', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
+    // Function to handle form submission
+    async function handleSignup() {
+        console.log('🧪 Signup form submitted!');
         
-        const data = await response.json();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
         
-        if (data.success) {
-            showToast('Account created successfully! Redirecting...', 'success');
-            setTimeout(() => {
-                window.location.href = '/profile';
-            }, 1500);
-        } else {
-            showToast(data.message || 'Registration failed', 'error');
+        if (password !== confirmPassword) {
+            if (typeof showToast === 'function') {
+                showToast('Passwords do not match', 'error');
+            } else {
+                alert('Passwords do not match');
+            }
+            return;
         }
-    } catch (error) {
-        showToast('An error occurred. Please try again.', 'error');
-    } finally {
-        hideLoading();
+        
+        if (password.length < 8) {
+            if (typeof showToast === 'function') {
+                showToast('Password must be at least 8 characters long', 'error');
+            } else {
+                alert('Password must be at least 8 characters long');
+            }
+            return;
+        }
+        
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            password: password
+        };
+        
+        console.log('📧 Form data:', formData);
+        
+        if (typeof showLoading === 'function') {
+            showLoading();
+        }
+        
+        try {
+            console.log('🚀 Sending signup request...');
+            const response = await fetch('/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            console.log('📥 Response received:', response.status);
+            const data = await response.json();
+            console.log('📊 Response data:', data);
+            
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast('Account created successfully! Redirecting to login...', 'success');
+                } else {
+                    alert('Account created successfully! Redirecting to login...');
+                }
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+            } else {
+                const message = data.message || 'Signup failed';
+                if (typeof showToast === 'function') {
+                    showToast(message, 'error');
+                } else {
+                    alert(message);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Signup request error:', error);
+            const message = 'Network error. Please try again.';
+            if (typeof showToast === 'function') {
+                showToast(message, 'error');
+            } else {
+                alert(message);
+            }
+        } finally {
+            if (typeof hideLoading === 'function') {
+                hideLoading();
+            }
+        }
+    }
+    
+    // Add submit event listener
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        await handleSignup();
+    });
+    
+    // Add click event listener to submit button as backup
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        console.log('✅ Submit button found, adding click listener');
+        submitButton.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🧪 Submit button clicked!');
+            await handleSignup();
+        });
+    } else {
+        console.log('❌ Submit button not found');
     }
 });
+
+// Test functions for debugging
+function testJavaScript() {
+    console.log('🧪 JavaScript test function called!');
+    alert('JavaScript is working! Check console for details.');
+    
+    // Test utility functions
+    if (typeof showToast === 'function') {
+        console.log('✅ showToast function is available');
+    } else {
+        console.log('❌ showToast function is NOT available');
+    }
+    
+    if (typeof showLoading === 'function') {
+        console.log('✅ showLoading function is available');
+    } else {
+        console.log('❌ showLoading function is NOT available');
+    }
+}
+
+function testFetch() {
+    console.log('🧪 Testing basic fetch functionality...');
+    
+    fetch('/api/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({test: 'data'})
+    })
+    .then(response => {
+        console.log('🧪 Fetch response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('🧪 Fetch response data:', data);
+        alert('Fetch is working! Check console for details.');
+    })
+    .catch(error => {
+        console.error('🧪 Fetch error:', error);
+        alert('Fetch error: ' + error.message);
+    });
+}
 
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
