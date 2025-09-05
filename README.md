@@ -15,9 +15,13 @@ A modern, AI-powered web application that helps students find their perfect scho
 
 ## 🚀 Quick Start
 
+ To access the deployed app, navigate through the following link : https://scholarship-matcher.onrender.com
+
+*#*#* For developers who would want to replicate the devolpment of the app using this repository
+
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.8< Python Interpreter < Python 3.10
 - Supabase account
 - Instasend API key (optional, for SMS notifications)
 
